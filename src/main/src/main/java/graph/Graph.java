@@ -8,7 +8,7 @@ import java.util.*;
 
 
 public class Graph<E> {
-    /// we use an edge list for easier implementation of Edge-Centric Algorithms
+    // we use an edge list for easier implementation of Edge-Centric Algorithms
     List<Edge<E>> edges;
 
     Map<E, List<Edge<E>>> neighbors;
@@ -20,13 +20,37 @@ public class Graph<E> {
         edgesSorted = true; //trivially sorted
     }
 
-    private record Pair<E>(Edge<E> fst, E snd) implements Comparable<Pair<E>> {
+    /**
+     * A simple helper wrapper that is used in priority queues and to order edges by priority.
+     * @param fst the edge part of the record
+     * @param snd the satellite data we want to order using the weight, or the data we want to bundle with the edge
+     */
+    private record EdgeRecord<E>(Edge<E> fst, E snd) implements Comparable<EdgeRecord<E>> {
         @Override
-        public int compareTo(Pair<E> other) {
+        public int compareTo(EdgeRecord<E> other) {
             return Integer.compare(this.fst.weight, other.fst.weight);
         }
     }
 
+
+    /**
+     * A simple helper wrapper that is used in priority queues and to order nodes by a value.
+     * @param node the satellite data we want to order using the value, or the data we want to bundle with the value
+     */
+    private record WeightRecord<E>(Integer cost, E node) implements Comparable<WeightRecord<E>> {
+        @Override
+        public int compareTo(WeightRecord<E> other) {
+            return Integer.compare(this.cost, other.cost);
+        }
+    }
+
+
+    /**
+     * Does exactly what you think it does.
+     * @param from src
+     * @param to destination
+     * @param weight weight, set to 0 for unweighted behavior
+     */
     public void addEdge(E from, E to, int weight){
         Edge<E> edge = new Edge<>(from, to, weight);
         if (!neighbors.containsKey(from))
@@ -42,17 +66,30 @@ public class Graph<E> {
         edgesSorted = false;
     }
 
+    /**
+     * Also does exactly what you think it does.
+     * @param from src
+     * @param to destination
+     * @param weight weight, set to 0 for unweighted behavior
+     */
     public void addDirectedEdge(E from, E to, int weight){
         Edge<E> edge = new Edge<>(from, to, weight);
         if (!neighbors.containsKey(from))
             neighbors.put(from, new ArrayList<>());
+        if (!neighbors.containsKey(to))
+            neighbors.put(to, new ArrayList<>());
+
         neighbors.get(from).add(edge);
         edgesSorted = false;
     }
 
+    /**
+     * Uses the popular Prim's Algorithm to get the Minimum Spanning Tree of the graph, using a greedy, Dijkstra-like approach.
+     * @return the list of edges constructing the MST, or null if graph is disconnected.
+     */
     public List<Edge<E>> primMST(){
         List<Edge<E>> minTree = new ArrayList<>();
-        PriorityQueue<Pair<E>> pq = new PriorityQueue<>();
+        PriorityQueue<EdgeRecord<E>> pq = new PriorityQueue<>();
 
         Set<E> visited = new HashSet<>();
 
@@ -61,9 +98,9 @@ public class Graph<E> {
 
         E start = edges.getFirst().from;
 
-        pq.add(new Pair<>(new Edge<>(null,null,0), start));
+        pq.add(new EdgeRecord<>(new Edge<>(null,null,0), start));
         while(!pq.isEmpty()){
-            Pair<E> p = pq.poll();
+            EdgeRecord<E> p = pq.poll();
             E node = p.snd;
             if (visited.contains(node)) continue; // ignore stale entries
 
@@ -74,7 +111,7 @@ public class Graph<E> {
             for(Edge<E> edge : neighbors.get(node)){
                 E neighbor = (edge.from == node)? edge.to : edge.from;
                 // if condition because in bidirectional edges there is no guarantee
-                pq.add(new Pair<>(edge, neighbor));
+                pq.add(new EdgeRecord<>(edge, neighbor));
             }
         }
         if (visited.size() != neighbors.size())
@@ -82,6 +119,11 @@ public class Graph<E> {
         return minTree;
     }
 
+    /**
+     * Uses Kruskal's Algorithm to get the Minimum Spanning Tree of the graph, using a sort-then-operate
+     * strategy that sorts edges by weight then taken the edges that combine two disconnected components together.
+     * @return the list of edges constructing the MST, or null if graph is disconnected.
+     */
     public List<Edge<E>> kruskalMST(){
         List<Edge<E>> mstEdges = new ArrayList<>();
         if (!edgesSorted){
@@ -106,5 +148,40 @@ public class Graph<E> {
             return null; //disconnected graph
 
         return mstEdges;
+    }
+
+    /**
+     * Uses Dijkstra's Algorithm  to find the shortest paths from a given source;
+     * @param source the origin of the search
+     * @return a Map of every node value with the length of its shortest path, or null in case of negative weights.
+     */
+    public Map<E, Integer> dijkstra(E source){
+        if (edges.isEmpty())
+            return null;
+
+        Map<E, Integer> shortestPaths = new HashMap<>();
+        for(Edge<E> edge : edges){
+            if (edge.weight < 0)
+                return null; // we can't allow for -ve edges + can lead to infinite cycles or uncontrollable growth of pq
+
+        }
+        PriorityQueue<WeightRecord<E>> pq = new PriorityQueue<>();
+
+        Set<E> visited = new HashSet<>();
+        pq.add(new WeightRecord<>(0, edges.getFirst().from));
+        while (!pq.isEmpty()){
+            WeightRecord<E> record = pq.poll();
+            if (visited.contains(record.node))
+                continue;
+            visited.add(record.node);
+            shortestPaths.put(record.node, record.cost);
+            for(Edge<E> edge : neighbors.get(record.node)){
+                E neighbor = (edge.from == record.node)? edge.to : edge.from;
+                if(visited.contains(neighbor)) continue; //extra optimization to ignore pre-visited nodes
+                pq.add(new WeightRecord<>(record.cost + edge.weight, neighbor));
+            }
+
+        }
+        return shortestPaths;
     }
 }
