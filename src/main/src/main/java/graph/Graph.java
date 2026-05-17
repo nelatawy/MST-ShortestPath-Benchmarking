@@ -14,10 +14,13 @@ public class Graph<E> {
     Map<E, List<Edge<E>>> neighbors;
 
     boolean edgesSorted;
+    int nodeCount;
+
     public Graph(){
         edges = new ArrayList<>();
         neighbors = new HashMap<>();
         edgesSorted = true; //trivially sorted
+        nodeCount = 0;
     }
 
     /**
@@ -53,11 +56,15 @@ public class Graph<E> {
      */
     public void addEdge(E from, E to, int weight){
         Edge<E> edge = new Edge<>(from, to, weight);
-        if (!neighbors.containsKey(from))
+        if (!neighbors.containsKey(from)){
             neighbors.put(from, new ArrayList<>());
+            nodeCount++;
+        }
 
-        if(!neighbors.containsKey(to))
+        if(!neighbors.containsKey(to)){
             neighbors.put(to, new ArrayList<>());
+            nodeCount++;
+        }
 
         neighbors.get(from).add(edge);
         neighbors.get(to).add(edge);
@@ -74,12 +81,18 @@ public class Graph<E> {
      */
     public void addDirectedEdge(E from, E to, int weight){
         Edge<E> edge = new Edge<>(from, to, weight);
-        if (!neighbors.containsKey(from))
+        if (!neighbors.containsKey(from)){
             neighbors.put(from, new ArrayList<>());
-        if (!neighbors.containsKey(to))
+            nodeCount++;
+        }
+
+        if(!neighbors.containsKey(to)){
             neighbors.put(to, new ArrayList<>());
+            nodeCount++;
+        }
 
         neighbors.get(from).add(edge);
+        edges.add(edge);
         edgesSorted = false;
     }
 
@@ -197,25 +210,30 @@ public class Graph<E> {
      */
     public Map<E, Integer> dagShortestPath(E source){
         Map<E, Integer> visited = new HashMap<>();
-        // we save the status of it (1: visited once (processing children), 2: finished processing children)
+        // we save the status of it (0 : pushed to the stack, 1: visited once (processing children), 2: finished processing children)
         Stack<E> stack = new Stack<>();
 
         // first we get the topological sorting of nodes
         List<E> topoSorted = new ArrayList<>();
         Map<E, Integer> shortestPaths = new HashMap<>();
         stack.push(source);
+        visited.put(source, 0);
         while(!stack.empty()){
             E top = stack.pop();
             Integer status = visited.get(top);
 
-            if(status == null) { // first encounter
-                visited.put(top, 1);
+            if(status == 0) { // first encounter
                 stack.push(top); // to be processed afterward
+                visited.put(top, 1); // processing
+
                 for(Edge<E> edge : neighbors.get(top)){
                     E neighbor = edge.to;
                     Integer neighborStatus = visited.get(neighbor);
-                    if (neighborStatus != null && neighborStatus == 2) continue; // to not push unnecessary elements
+                    if (neighborStatus != null)  continue;// to not push unnecessary elements
+
                     stack.push(neighbor);
+                    visited.put(neighbor, 0);
+                    // we mark visited here to avoid unnecessary pushes that slow things down
                 }
             }
             else if (status == 1) { // this is the second visit you can process self
@@ -239,6 +257,31 @@ public class Graph<E> {
             }
         }
         return shortestPaths;
+    }
+
+    public int getNodeCount(){return this.nodeCount;}
+
+    public int getEdgeCount(){return this.edges.size();}
+
+    public List<E> BFS(E source){
+        List<E> result = new ArrayList<>();
+        Queue<E> queue = new LinkedList<>();
+        queue.add(source);
+        if (!neighbors.containsKey(source))
+            return null;
+        Set<E> visited = new HashSet<>();
+        visited.add(source);
+        while (!queue.isEmpty()){
+            E front = queue.poll();
+            result.add(front);
+            for(Edge<E> edge : neighbors.get(front)){
+                E neighbor = ((edge.from == front)? edge.to : edge.from);
+                if(visited.contains(neighbor)) continue;
+                queue.add(neighbor);
+                visited.add(neighbor);
+            }
+        }
+        return result;
     }
 
 }

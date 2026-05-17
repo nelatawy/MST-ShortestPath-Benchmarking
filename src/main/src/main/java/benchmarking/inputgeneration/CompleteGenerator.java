@@ -4,7 +4,7 @@ import main.java.graph.Graph;
 
 import java.util.Random;
 
-public class CompleteGraph implements GraphGenerator{
+public class CompleteGenerator implements GraphGenerator{
     @Override
     public Graph<Integer> generate(int nodeCount) {
         Graph<Integer> graph = new Graph<>();
