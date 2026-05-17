@@ -187,4 +187,51 @@ public class Graph<E> {
         }
         return shortestPaths;
     }
+
+    public Map<E, Integer> dagShortestPath(E source){
+        Map<E, Integer> visited = new HashMap<>();
+        // we save the status of it (1: visited once (processing children), 2: finished processing children)
+        Stack<E> stack = new Stack<>();
+
+        // first we get the topological sorting of nodes
+        List<E> topoSorted = new ArrayList<>();
+        Map<E, Integer> shortestPaths = new HashMap<>();
+        stack.push(source);
+        while(!stack.empty()){
+            E top = stack.pop();
+            Integer status = visited.get(top);
+
+            if(status == null) { // first encounter
+                visited.put(top, 1);
+                stack.push(top); // to be processed afterward
+                for(Edge<E> edge : neighbors.get(top)){
+                    E neighbor = edge.to;
+                    Integer neighborStatus = visited.get(neighbor);
+                    if (neighborStatus != null && neighborStatus == 2) continue; // to not push unnecessary elements
+                    stack.push(neighbor);
+                }
+            }
+            else if (status == 1) { // this is the second visit you can process self
+                visited.put(top, 2);
+                topoSorted.add(top);
+            }
+        }
+        Collections.reverse(topoSorted);
+
+        // then we process nodes in topological order
+        // by definition, all nodes in a path leading to a specified node are of lower index than that of the node itself
+        // so on processing a node we already have the shortest path to it, relaxation is correct like in Dijkstra's algorithm
+        shortestPaths.put(source, 0);
+        for(E node : topoSorted){
+            int baseCost = shortestPaths.get(node); // can't be null by definition
+            for(Edge<E> edge : neighbors.get(node)){
+                Integer oldCost = shortestPaths.get(edge.to); // can be null
+                int newCost = baseCost + edge.weight;
+                if(oldCost == null || newCost < oldCost)
+                    shortestPaths.put(edge.to, newCost);
+            }
+        }
+        return shortestPaths;
+    }
+
 }
