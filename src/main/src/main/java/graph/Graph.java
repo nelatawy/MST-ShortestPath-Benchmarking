@@ -153,7 +153,8 @@ public class Graph<E> {
     /**
      * Uses Dijkstra's Algorithm  to find the shortest paths from a given source;
      * @param source the origin of the search
-     * @return a Map of every node value with the length of its shortest path, or null in case of negative weights.
+     * @return a Map of every node value with the length of its shortest path, or null in case of negative weights;
+     * a map entry value will be null if it's unreachable from source.
      */
     public Map<E, Integer> dijkstra(E source){
         if (edges.isEmpty())
@@ -188,6 +189,12 @@ public class Graph<E> {
         return shortestPaths;
     }
 
+    /**
+     * A shortest-path method that only operates on DAGs in O(V + E) relies on algorithmic invariance,
+     * processes the nodes in topological order and relaxes nodes to obtain the shortest path
+     * @param source the origin
+     * @return a Map of every node value with the length of its shortest path, a map entry value will be null if it's unreachable from source.
+     */
     public Map<E, Integer> dagShortestPath(E source){
         Map<E, Integer> visited = new HashMap<>();
         // we save the status of it (1: visited once (processing children), 2: finished processing children)
