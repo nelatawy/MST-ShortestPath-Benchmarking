@@ -50,6 +50,7 @@ public class TreeDS<E> implements DisjointSet<E>{
         setCount++;
     }
 
+    @Override
     public int getSetCount(){
         return this.setCount;
     }

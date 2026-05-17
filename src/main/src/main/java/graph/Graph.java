@@ -1,6 +1,7 @@
-package main.java;
+package main.java.graph;
 
-import main.java.DS.Edge;
+import main.java.DS.DisjointSet;
+import main.java.DS.TreeDS;
 
 import java.util.*;
 
@@ -11,9 +12,12 @@ public class Graph<E> {
     List<Edge<E>> edges;
 
     Map<E, List<Edge<E>>> neighbors;
+
+    boolean edgesSorted;
     public Graph(){
         edges = new ArrayList<>();
         neighbors = new HashMap<>();
+        edgesSorted = true; //trivially sorted
     }
 
     private record Pair<E>(Edge<E> fst, E snd) implements Comparable<Pair<E>> {
@@ -34,6 +38,8 @@ public class Graph<E> {
         neighbors.get(from).add(edge);
         neighbors.get(to).add(edge);
         edges.add(edge);
+
+        edgesSorted = false;
     }
 
     public void addDirectedEdge(E from, E to, int weight){
@@ -41,6 +47,7 @@ public class Graph<E> {
         if (!neighbors.containsKey(from))
             neighbors.put(from, new ArrayList<>());
         neighbors.get(from).add(edge);
+        edgesSorted = false;
     }
 
     public List<Edge<E>> primMST(){
@@ -70,10 +77,34 @@ public class Graph<E> {
                 pq.add(new Pair<>(edge, neighbor));
             }
         }
-//        System.out.println(neighbors.size());
         if (visited.size() != neighbors.size())
             return null; //not all visited ... disconnected graph
         return minTree;
     }
 
+    public List<Edge<E>> kruskalMST(){
+        List<Edge<E>> mstEdges = new ArrayList<>();
+        if (!edgesSorted){
+            // to be faster on multiple queries
+            Collections.sort(edges);
+            edgesSorted = true;
+        }
+
+        // construct the Disjoint Set
+        DisjointSet<E> set = new TreeDS<>();
+        for(Map.Entry<E, List<Edge<E>>> entry : neighbors.entrySet()){
+            set.addSet(entry.getKey());
+        }
+        for(Edge<E> edge : edges){
+            if(set.getSet(edge.from) != set.getSet(edge.to)){
+                // two different sets that we can combine
+                set.unionSets(edge.from, edge.to);
+                mstEdges.add(edge);
+            }
+        }
+        if (set.getSetCount() != 1)
+            return null; //disconnected graph
+
+        return mstEdges;
+    }
 }

@@ -22,4 +22,8 @@ public interface DisjointSet<E> {
      */
     public void addSet(E rootEle);
 
+    /**
+     * Get the total number of sets
+     */
+    public int getSetCount();
 }

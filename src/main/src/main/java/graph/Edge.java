@@ -1,4 +1,4 @@
-package main.java.DS;
+package main.java.graph;
 
 public class Edge<E> implements Comparable<Edge<E>>{
     public E from;
