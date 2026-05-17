@@ -108,4 +108,73 @@ public class MSTTest {
 
         assertNull(mstEdges, "MST Should be null since graph is disconnected");
     }
+
+    @Test
+    public void testMSTWithParallelEdges() {
+        // Multiple edges between same nodes; algorithms must pick the minimum weight duplicate
+        graph.addEdge("A", "B", 10);
+        graph.addEdge("A", "B", 2);  // Shorter parallel edge
+        graph.addEdge("B", "C", 3);
+        graph.addEdge("B", "C", 12); // Longer parallel edge
+
+        List<Edge<String>> primMst = graph.primMST();
+        List<Edge<String>> kruskalMst = graph.kruskalMST();
+
+        for (List<Edge<String>> mstEdges : List.of(primMst, kruskalMst)) {
+            assertNotNull(mstEdges);
+            assertEquals(2, mstEdges.size());
+            assertEquals(5, mstEdges.stream().mapToInt(e -> e.weight).sum(), "Should pick weights 2 and 3");
+            assertTrue(mstEdges.stream().anyMatch(e -> e.from.equals("A") && e.to.equals("B") && e.weight == 2));
+            assertTrue(mstEdges.stream().anyMatch(e -> e.from.equals("B") && e.to.equals("C") && e.weight == 3));
+        }
+    }
+
+    @Test
+    public void testMSTWithNegativeWeights() {
+
+        graph.addEdge("A", "B", -5);
+        graph.addEdge("B", "C", 2);
+        graph.addEdge("A", "C", 4);
+
+        List<Edge<String>> primMst = graph.primMST();
+        List<Edge<String>> kruskalMst = graph.kruskalMST();
+
+        for (List<Edge<String>> mstEdges : List.of(primMst, kruskalMst)) {
+            assertNotNull(mstEdges);
+            assertEquals(2, mstEdges.size());
+            assertEquals(-3, mstEdges.stream().mapToInt(e -> e.weight).sum(), "Total weight should be (-5) + 2 = -3");
+            assertTrue(mstEdges.stream().anyMatch(e -> e.from.equals("A") && e.to.equals("B") && e.weight == -5));
+            assertTrue(mstEdges.stream().anyMatch(e -> e.from.equals("B") && e.to.equals("C") && e.weight == 2));
+        }
+    }
+
+    @Test
+    public void testMSTWithSelfLoops() {
+        graph.addEdge("A", "A", 1);
+        graph.addEdge("A", "B", 4);
+        graph.addEdge("B", "B", 10);
+
+        List<Edge<String>> primMst = graph.primMST();
+        List<Edge<String>> kruskalMst = graph.kruskalMST();
+
+        for (List<Edge<String>> mstEdges : List.of(primMst, kruskalMst)) {
+            assertNotNull(mstEdges);
+            assertEquals(1, mstEdges.size());
+            assertTrue(mstEdges.stream().anyMatch(e -> e.from.equals("A") && e.to.equals("B") && e.weight == 4));
+            assertFalse(mstEdges.stream().anyMatch(e -> e.from.equals("A") && e.to.equals("A") && e.weight == 1));
+        }
+    }
+    @Test
+    public void testEmptyAndSingleNodeGraph() {
+
+        assertNull(graph.primMST(), "Empty graph should return null");
+        assertNull(graph.kruskalMST(), "Empty graph should return null");
+
+        graph.addEdge("A", "A", 0);
+        List<Edge<String>> primSingle = graph.primMST();
+        List<Edge<String>> kruskalSingle = graph.kruskalMST();
+
+        assertTrue(primSingle.isEmpty());
+        assertTrue(kruskalSingle.isEmpty());
+    }
 }

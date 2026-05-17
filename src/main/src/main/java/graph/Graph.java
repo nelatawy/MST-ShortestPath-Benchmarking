@@ -159,6 +159,9 @@ public class Graph<E> {
         if (edges.isEmpty())
             return null;
 
+        if (!neighbors.containsKey(source))
+            return null;
+
         Map<E, Integer> shortestPaths = new HashMap<>();
         for(Edge<E> edge : edges){
             if (edge.weight < 0)
