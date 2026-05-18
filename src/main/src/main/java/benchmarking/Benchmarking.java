@@ -1,9 +1,6 @@
 package main.java.benchmarking;
 
-import main.java.benchmarking.inputgeneration.DAGGenerator;
-import main.java.benchmarking.inputgeneration.DenseGenerator;
-import main.java.benchmarking.inputgeneration.GraphGenerator;
-import main.java.benchmarking.inputgeneration.GraphType;
+import main.java.benchmarking.inputgeneration.*;
 import main.java.graph.Graph;
 
 import java.io.IOException;
@@ -11,10 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 
 public class Benchmarking {
@@ -81,9 +75,10 @@ public class Benchmarking {
         }
 
         int source = new Random(42).nextInt(graph.getNodeCount());
+        Map<Integer, Integer> shortestPaths = null;
         for(int i = 0; i < itrCnt; i++){
             Long start = System.nanoTime();
-            graph.dijkstra(source);
+            shortestPaths = graph.dijkstra(source);
             // randomizing the source
             Long end = System.nanoTime();
             Double timeMillis = (double)(end - start)/1e6;
@@ -93,6 +88,12 @@ public class Benchmarking {
         double mean = getMean(runningTimes);
         double standardDeviation = getStandardDeviation(mean, runningTimes);
         double median = getMedian(runningTimes);
+
+        for(int i = 0; i < graph.getNodeCount(); i ++){
+
+            System.out.println("Shortest Path " + "node " + i + ": " + shortestPaths.get(i));
+
+        }
 
         Files.writeString(file, "Dijkstra, " +
                 graph.getNodeCount() + ", " +
@@ -111,10 +112,11 @@ public class Benchmarking {
             Files.createFile(file);
             Files.writeString(file, "Algorithm, NodeCount, EdgeCount, MeanTime, StdDev, MedianTime, SpeedupMultiplier\n");
         }
+        Map<Integer, Integer> dagShortestPaths = null;
         int source = new Random(42).nextInt(graph.getNodeCount());
         for(int i = 0; i < itrCnt; i++){
             Long start = System.nanoTime();
-            graph.dagShortestPath(source);
+            dagShortestPaths = graph.dagShortestPath(source);
             // randomizing the source
             Long end = System.nanoTime();
             Double timeMillis = (double)(end - start)/1e6;
@@ -125,13 +127,19 @@ public class Benchmarking {
         double standardDeviation = getStandardDeviation(mean, runningTimes);
         double median = getMedian(runningTimes);
 
-        // comparing to Dijkstra
+//         comparing to Dijkstra
         Long start = System.nanoTime();
-        graph.dijkstra(source);
+        Map<Integer, Integer> dijkstraShortestPaths = graph.dijkstra(source);
         Long end = System.nanoTime();
         double dijkstraTimeMillis = (double)(end - start)/1e6;
-
-        Double speedup = dijkstraTimeMillis / mean;
+//        System.out.println(source);
+        // validation
+        for(int i = 0; i < graph.getNodeCount(); i ++){
+            if(!Objects.equals(dagShortestPaths.get(i), dijkstraShortestPaths.get(i))){
+                System.out.println("Shortest Path mismatch " + "node " + i + " dag : " + dagShortestPaths.get(i) + ", dijkstra : " + dijkstraShortestPaths.get(i));
+            }
+        }
+        double speedup = dijkstraTimeMillis / mean;
 
         Files.writeString(file, "DAG-Topo, " +
                 graph.getNodeCount() + ", " +
@@ -143,6 +151,7 @@ public class Benchmarking {
 
 
     }
+
     private static double getMean(List<Double> runningTimes){
         return runningTimes
                 .stream()
@@ -172,6 +181,10 @@ public class Benchmarking {
     public static void main() throws IOException {
         GraphGenerator generator = new DAGGenerator();
         Graph<Integer> graph = generator.generate(5000);
+//        Map<Integer, Integer> shortest = graph.dijkstra(0);
+//        for(int i = 0; i < graph.getNodeCount(); i ++){
+//            System.out.println("Shortest Path " + "node " + i + ": " + shortest.get(i));
+//        }
         dagShortestPathBenchmarks(graph);
     }
 }

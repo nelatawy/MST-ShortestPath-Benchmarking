@@ -122,7 +122,7 @@ public class Graph<E> {
                 minTree.add(p.fst);
             }
             for(Edge<E> edge : neighbors.get(node)){
-                E neighbor = (edge.from == node)? edge.to : edge.from;
+                E neighbor = (edge.from.equals(node))? edge.to : edge.from;
                 // if condition because in bidirectional edges there is no guarantee
                 pq.add(new EdgeRecord<>(edge, neighbor));
             }
@@ -185,7 +185,7 @@ public class Graph<E> {
         PriorityQueue<WeightRecord<E>> pq = new PriorityQueue<>();
 
         Set<E> visited = new HashSet<>();
-        pq.add(new WeightRecord<>(0, edges.getFirst().from));
+        pq.add(new WeightRecord<>(0, source));
         while (!pq.isEmpty()){
             WeightRecord<E> record = pq.poll();
             if (visited.contains(record.node))
@@ -193,7 +193,7 @@ public class Graph<E> {
             visited.add(record.node);
             shortestPaths.put(record.node, record.cost);
             for(Edge<E> edge : neighbors.get(record.node)){
-                E neighbor = (edge.from == record.node)? edge.to : edge.from;
+                E neighbor = (edge.from.equals(record.node))? edge.to : edge.from;
                 if(visited.contains(neighbor)) continue; //extra optimization to ignore pre-visited nodes
                 pq.add(new WeightRecord<>(record.cost + edge.weight, neighbor));
             }
@@ -217,26 +217,22 @@ public class Graph<E> {
         List<E> topoSorted = new ArrayList<>();
         Map<E, Integer> shortestPaths = new HashMap<>();
         stack.push(source);
-        visited.put(source, 0);
         while(!stack.empty()){
             E top = stack.pop();
             Integer status = visited.get(top);
-
-            if(status == 0) { // first encounter
+            if(status == null) { // first encounter
                 stack.push(top); // to be processed afterward
                 visited.put(top, 1); // processing
 
                 for(Edge<E> edge : neighbors.get(top)){
                     E neighbor = edge.to;
                     Integer neighborStatus = visited.get(neighbor);
-                    if (neighborStatus != null)  continue;// to not push unnecessary elements
-
+                    if (neighborStatus != null &&  neighborStatus.equals(2))  continue;// to not push unnecessary elements
                     stack.push(neighbor);
-                    visited.put(neighbor, 0);
                     // we mark visited here to avoid unnecessary pushes that slow things down
                 }
             }
-            else if (status == 1) { // this is the second visit you can process self
+            else if (status.equals(1)) { // this is the second visit you can process self
                 visited.put(top, 2);
                 topoSorted.add(top);
             }
@@ -252,7 +248,7 @@ public class Graph<E> {
             for(Edge<E> edge : neighbors.get(node)){
                 Integer oldCost = shortestPaths.get(edge.to); // can be null
                 int newCost = baseCost + edge.weight;
-                if(oldCost == null || newCost < oldCost)
+                if(oldCost == null || oldCost.compareTo(newCost) > 0)
                     shortestPaths.put(edge.to, newCost);
             }
         }
@@ -275,7 +271,7 @@ public class Graph<E> {
             E front = queue.poll();
             result.add(front);
             for(Edge<E> edge : neighbors.get(front)){
-                E neighbor = ((edge.from == front)? edge.to : edge.from);
+                E neighbor = ((edge.from.equals(front))? edge.to : edge.from);
                 if(visited.contains(neighbor)) continue;
                 queue.add(neighbor);
                 visited.add(neighbor);
