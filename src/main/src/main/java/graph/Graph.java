@@ -216,35 +216,39 @@ public class Graph<E> {
         // first we get the topological sorting of nodes
         List<E> topoSorted = new ArrayList<>();
         Map<E, Integer> shortestPaths = new HashMap<>();
-        stack.push(source);
-        while(!stack.empty()){
-            E top = stack.pop();
-            Integer status = visited.get(top);
-            if(status == null) { // first encounter
-                stack.push(top); // to be processed afterward
-                visited.put(top, 1); // processing
-
-                for(Edge<E> edge : neighbors.get(top)){
-                    E neighbor = edge.to;
-                    Integer neighborStatus = visited.get(neighbor);
-                    if (neighborStatus != null &&  neighborStatus.equals(2))  continue;// to not push unnecessary elements
-                    stack.push(neighbor);
-                    // we mark visited here to avoid unnecessary pushes that slow things down
+//        ----- Khan's Topological Sorting ----
+        Map<E, Integer> inDegrees = new HashMap<>();
+        Queue<E> queue = new LinkedList<>();
+        for (Map.Entry<E, List<Edge<E>>> entry : neighbors.entrySet()){
+            inDegrees.put(entry.getKey(), 0);
+        }
+        for(Edge<E> edge : edges){
+            inDegrees.put(edge.to, inDegrees.get(edge.to) + 1);
+        }
+        for(Map.Entry<E, Integer> entry : inDegrees.entrySet()){
+            if (entry.getValue().equals(0))
+                queue.add(entry.getKey());
+        }
+        while(!queue.isEmpty()){
+            E top = queue.poll();
+            topoSorted.add(top);
+            for(Edge<E> edge : neighbors.get(top)){
+                int oldDeg = inDegrees.get(edge.to);
+                if (oldDeg - 1 == 0){
+                    queue.add(edge.to);
                 }
-            }
-            else if (status.equals(1)) { // this is the second visit you can process self
-                visited.put(top, 2);
-                topoSorted.add(top);
+                inDegrees.put(edge.to, oldDeg - 1);
+
             }
         }
-        Collections.reverse(topoSorted);
-
         // then we process nodes in topological order
         // by definition, all nodes in a path leading to a specified node are of lower index than that of the node itself
         // so on processing a node we already have the shortest path to it, relaxation is correct like in Dijkstra's algorithm
         shortestPaths.put(source, 0);
         for(E node : topoSorted){
-            int baseCost = shortestPaths.get(node); // can't be null by definition
+            Integer baseCost = shortestPaths.get(node);
+            if (baseCost == null) // it's unreachable from source
+                continue;
             for(Edge<E> edge : neighbors.get(node)){
                 Integer oldCost = shortestPaths.get(edge.to); // can be null
                 int newCost = baseCost + edge.weight;

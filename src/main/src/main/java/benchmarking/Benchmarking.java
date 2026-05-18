@@ -141,7 +141,8 @@ public class Benchmarking {
         }
         double speedup = dijkstraTimeMillis / mean;
 
-        Files.writeString(file, "DAG-Topo, " +
+        Files.writeString(file,
+                "DAG-Topo"      + ", " +
                 graph.getNodeCount() + ", " +
                 graph.getEdgeCount() + ", " +
                 mean                 + ", " +
@@ -180,7 +181,7 @@ public class Benchmarking {
 
     public static void main() throws IOException {
         GraphGenerator generator = new DAGGenerator();
-        Graph<Integer> graph = generator.generate(5000);
+        Graph<Integer> graph = generator.generate(10000);
 //        Map<Integer, Integer> shortest = graph.dijkstra(0);
 //        for(int i = 0; i < graph.getNodeCount(); i ++){
 //            System.out.println("Shortest Path " + "node " + i + ": " + shortest.get(i));
