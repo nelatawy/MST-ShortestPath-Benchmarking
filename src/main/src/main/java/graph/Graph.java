@@ -13,12 +13,26 @@ public class Graph<E> {
 
     Map<E, List<Edge<E>>> neighbors;
 
+    // mappings to use instead of many map lookups in DAG-SSSP
+    Map<E, Integer> mapToIdx;
+    Map<Integer, E> mapToObj;
+
+    // keeping the InDegrees
+    List<Integer> inDegrees;
+    List<Integer> outDegrees;
+
     boolean edgesSorted;
     int nodeCount;
 
     public Graph(){
         edges = new ArrayList<>();
         neighbors = new HashMap<>();
+        mapToIdx = new HashMap<>();
+        mapToObj = new HashMap<>();
+
+        inDegrees = new ArrayList<>();
+        outDegrees = new ArrayList<>();
+
         edgesSorted = true; //trivially sorted
         nodeCount = 0;
     }
@@ -47,7 +61,18 @@ public class Graph<E> {
         }
     }
 
-
+    /**
+     * Helper method that handles node addition, mapping, neighbor array allocation, etc.
+     * @param node val of the node we want to add.
+     */
+    private void addNode(E node){
+        neighbors.put(node, new ArrayList<>());
+        mapToIdx.put(node, nodeCount);
+        mapToObj.put(nodeCount, node);
+        inDegrees.add(0);
+        outDegrees.add(0);
+        nodeCount++;
+    }
     /**
      * Does exactly what you think it does.
      * @param from src
@@ -57,13 +82,11 @@ public class Graph<E> {
     public void addEdge(E from, E to, int weight){
         Edge<E> edge = new Edge<>(from, to, weight);
         if (!neighbors.containsKey(from)){
-            neighbors.put(from, new ArrayList<>());
-            nodeCount++;
+            addNode(from);
         }
 
         if(!neighbors.containsKey(to)){
-            neighbors.put(to, new ArrayList<>());
-            nodeCount++;
+            addNode(to);
         }
 
         neighbors.get(from).add(edge);
@@ -82,13 +105,11 @@ public class Graph<E> {
     public void addDirectedEdge(E from, E to, int weight){
         Edge<E> edge = new Edge<>(from, to, weight);
         if (!neighbors.containsKey(from)){
-            neighbors.put(from, new ArrayList<>());
-            nodeCount++;
+            addNode(from);
         }
 
         if(!neighbors.containsKey(to)){
-            neighbors.put(to, new ArrayList<>());
-            nodeCount++;
+            addNode(to);
         }
 
         neighbors.get(from).add(edge);
@@ -209,36 +230,38 @@ public class Graph<E> {
      * @return a Map of every node value with the length of its shortest path, a map entry value will be null if it's unreachable from source.
      */
     public Map<E, Integer> dagShortestPath(E source){
-        Map<E, Integer> visited = new HashMap<>();
-        // we save the status of it (0 : pushed to the stack, 1: visited once (processing children), 2: finished processing children)
-        Stack<E> stack = new Stack<>();
 
         // first we get the topological sorting of nodes
         List<E> topoSorted = new ArrayList<>();
         Map<E, Integer> shortestPaths = new HashMap<>();
-//        ----- Khan's Topological Sorting ----
-        Map<E, Integer> inDegrees = new HashMap<>();
-        Queue<E> queue = new LinkedList<>();
-        for (Map.Entry<E, List<Edge<E>>> entry : neighbors.entrySet()){
-            inDegrees.put(entry.getKey(), 0);
+        // ----- Khan's Topological Sorting ----
+
+        int[] inDegrees = new int[nodeCount];
+        for (int i = 0; i < nodeCount; i++) {
+            inDegrees[i] = this.inDegrees.get(i);
         }
+        // to avoid reallocation penalty and / or messing with global data
+        // using c-style array to avoid unnecessary pointer hops or cache misses
+        Queue<Integer> queue = new LinkedList<>();
+
         for(Edge<E> edge : edges){
-            inDegrees.put(edge.to, inDegrees.get(edge.to) + 1);
+            int nodeIdx = mapToIdx.get(edge.to);
+            inDegrees[nodeIdx]++;
         }
-        for(Map.Entry<E, Integer> entry : inDegrees.entrySet()){
-            if (entry.getValue().equals(0))
-                queue.add(entry.getKey());
+        for(int i = 0; i < nodeCount; i++){
+            if (inDegrees[i] == 0)
+                queue.add(i);
         }
         while(!queue.isEmpty()){
-            E top = queue.poll();
-            topoSorted.add(top);
-            for(Edge<E> edge : neighbors.get(top)){
-                int oldDeg = inDegrees.get(edge.to);
-                if (oldDeg - 1 == 0){
-                    queue.add(edge.to);
+            int top = queue.poll();
+            topoSorted.add(mapToObj.get(top));
+            for(Edge<E> edge : neighbors.get(mapToObj.get(top))){
+                int neighborIdx = mapToIdx.get(edge.to);
+                int newDeg = inDegrees[neighborIdx] - 1;
+                inDegrees[neighborIdx] = newDeg;
+                if (newDeg == 0) {
+                    queue.add(neighborIdx);
                 }
-                inDegrees.put(edge.to, oldDeg - 1);
-
             }
         }
         // then we process nodes in topological order
@@ -252,7 +275,7 @@ public class Graph<E> {
             for(Edge<E> edge : neighbors.get(node)){
                 Integer oldCost = shortestPaths.get(edge.to); // can be null
                 int newCost = baseCost + edge.weight;
-                if(oldCost == null || oldCost.compareTo(newCost) > 0)
+                if(oldCost == null || oldCost > newCost)
                     shortestPaths.put(edge.to, newCost);
             }
         }

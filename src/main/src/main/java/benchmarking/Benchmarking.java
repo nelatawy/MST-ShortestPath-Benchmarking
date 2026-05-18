@@ -66,7 +66,14 @@ public class Benchmarking {
     }
 
     public static void generalShortestPathBenchmark(Graph<Integer> graph, GraphType type) throws IOException {
-        int itrCnt = 5;
+        int warmUpItr = 25;
+        int measurementItr = 5;
+        int source = new Random(42).nextInt(graph.getNodeCount());
+
+
+        for(int i = 0; i < warmUpItr; i++) {
+            graph.dijkstra(source);
+        }
         List<Double> runningTimes = new ArrayList<>();
         Path file = Paths.get("general-sssp-benchmarks.csv");
         if (!Files.exists(file)){
@@ -74,9 +81,8 @@ public class Benchmarking {
             Files.writeString(file, "Algorithm, NodeCount, EdgeCount, Distribution, MeanTime, StdDev, MedianTime\n");
         }
 
-        int source = new Random(42).nextInt(graph.getNodeCount());
         Map<Integer, Integer> shortestPaths = null;
-        for(int i = 0; i < itrCnt; i++){
+        for(int i = 0; i < measurementItr; i++){
             Long start = System.nanoTime();
             shortestPaths = graph.dijkstra(source);
             // randomizing the source
@@ -89,12 +95,6 @@ public class Benchmarking {
         double standardDeviation = getStandardDeviation(mean, runningTimes);
         double median = getMedian(runningTimes);
 
-        for(int i = 0; i < graph.getNodeCount(); i ++){
-
-            System.out.println("Shortest Path " + "node " + i + ": " + shortestPaths.get(i));
-
-        }
-
         Files.writeString(file, "Dijkstra, " +
                 graph.getNodeCount() + ", " +
                 graph.getEdgeCount() + ", " +
@@ -105,16 +105,41 @@ public class Benchmarking {
     }
 
     public static void dagShortestPathBenchmarks(Graph<Integer> graph) throws IOException {
-        int itrCnt = 5;
+        int warmUpItr = 25;
+        int measurementItr = 10;
+        int source = new Random(42).nextInt(graph.getNodeCount());
+
+        for(int i = 0; i < warmUpItr; i++) {
+            graph.dijkstra(source);
+        }
+
         List<Double> runningTimes = new ArrayList<>();
         Path file = Paths.get("dag-sssp-benchmarks.csv");
         if (!Files.exists(file)){
             Files.createFile(file);
             Files.writeString(file, "Algorithm, NodeCount, EdgeCount, MeanTime, StdDev, MedianTime, SpeedupMultiplier\n");
         }
+
+        Map<Integer, Integer> dijkstraShortestPaths = null;
+//         comparing to Dijkstra
+        for(int i = 0; i < measurementItr; i++){
+            Long start = System.nanoTime();
+            dijkstraShortestPaths = graph.dijkstra(source);
+            // randomizing the source
+            Long end = System.nanoTime();
+            Double timeMillis = (double)(end - start)/1e6;
+            runningTimes.add(timeMillis);
+        }
+
+        double dijkstraMean = getMean(runningTimes);
+
+        for(int i = 0; i < warmUpItr; i++) {
+            graph.dagShortestPath(source);
+        }
+        runningTimes.clear();
         Map<Integer, Integer> dagShortestPaths = null;
-        int source = new Random(42).nextInt(graph.getNodeCount());
-        for(int i = 0; i < itrCnt; i++){
+
+        for(int i = 0; i < measurementItr; i++){
             Long start = System.nanoTime();
             dagShortestPaths = graph.dagShortestPath(source);
             // randomizing the source
@@ -127,19 +152,14 @@ public class Benchmarking {
         double standardDeviation = getStandardDeviation(mean, runningTimes);
         double median = getMedian(runningTimes);
 
-//         comparing to Dijkstra
-        Long start = System.nanoTime();
-        Map<Integer, Integer> dijkstraShortestPaths = graph.dijkstra(source);
-        Long end = System.nanoTime();
-        double dijkstraTimeMillis = (double)(end - start)/1e6;
-//        System.out.println(source);
+
         // validation
         for(int i = 0; i < graph.getNodeCount(); i ++){
             if(!Objects.equals(dagShortestPaths.get(i), dijkstraShortestPaths.get(i))){
                 System.out.println("Shortest Path mismatch " + "node " + i + " dag : " + dagShortestPaths.get(i) + ", dijkstra : " + dijkstraShortestPaths.get(i));
             }
         }
-        double speedup = dijkstraTimeMillis / mean;
+        double speedup = dijkstraMean / mean;
 
         Files.writeString(file,
                 "DAG-Topo"      + ", " +
@@ -179,13 +199,68 @@ public class Benchmarking {
                 .sum() / (runningTimes.size() - 1));
     }
 
-    public static void main() throws IOException {
+    public static void populateMSTResults() throws IOException {
+        List<Integer> sizes = new ArrayList<>(List.of(500,1000,2500,5000));
+        for (Integer size : sizes){
+            GraphGenerator generator = new DAGGenerator();
+            Graph<Integer> graph = generator.generate(size);
+            MSTConstructionBenchmark(graph, GraphType.DAG);
+        }
+        for (Integer size : sizes){
+            GraphGenerator generator = new SparseGenerator();
+            Graph<Integer> graph = generator.generate(size);
+            MSTConstructionBenchmark(graph, GraphType.SPARSE);
+        }
+
+        for (Integer size : sizes){
+            GraphGenerator generator = new DenseGenerator();
+            Graph<Integer> graph = generator.generate(size);
+            MSTConstructionBenchmark(graph, GraphType.DENSE);
+        }
+
+        for (Integer size : sizes){
+            GraphGenerator generator = new CompleteGenerator();
+            Graph<Integer> graph = generator.generate(size);
+            MSTConstructionBenchmark(graph, GraphType.COMPLETE);
+        }
+    }
+
+    public static void populateDijkstraSSSPResults() throws IOException{
+        List<Integer> sizes = new ArrayList<>(List.of(500,1000,2500,5000));
+        for (Integer size : sizes){
+            GraphGenerator generator = new DAGGenerator();
+            Graph<Integer> graph = generator.generate(size);
+            generalShortestPathBenchmark(graph, GraphType.DAG);
+        }
+        for (Integer size : sizes){
+            GraphGenerator generator = new SparseGenerator();
+            Graph<Integer> graph = generator.generate(size);
+            generalShortestPathBenchmark(graph, GraphType.SPARSE);
+        }
+
+        for (Integer size : sizes){
+            GraphGenerator generator = new DenseGenerator();
+            Graph<Integer> graph = generator.generate(size);
+            generalShortestPathBenchmark(graph, GraphType.DENSE);
+        }
+
+        for (Integer size : sizes){
+            GraphGenerator generator = new CompleteGenerator();
+            Graph<Integer> graph = generator.generate(size);
+            generalShortestPathBenchmark(graph, GraphType.COMPLETE);
+        }
+    }
+
+    public static void populateDAGSSSPResults() throws IOException {
+        List<Integer> sizes = new ArrayList<>(List.of(1000, 2500, 5000, 10000, 20000, 100000));
         GraphGenerator generator = new DAGGenerator();
-        Graph<Integer> graph = generator.generate(10000);
-//        Map<Integer, Integer> shortest = graph.dijkstra(0);
-//        for(int i = 0; i < graph.getNodeCount(); i ++){
-//            System.out.println("Shortest Path " + "node " + i + ": " + shortest.get(i));
-//        }
-        dagShortestPathBenchmarks(graph);
+        for (Integer size : sizes) {
+            Graph<Integer> graph = generator.generate(size);
+            dagShortestPathBenchmarks(graph);
+        }
+    }
+
+    public static void main() throws IOException {
+        populateDAGSSSPResults();
     }
 }
