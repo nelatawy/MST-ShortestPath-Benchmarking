@@ -8,6 +8,12 @@ import java.util.Random;
 import java.util.Set;
 
 public class SparseGenerator implements GraphGenerator{
+    /**
+     * Generates a sparse connected graph defined as follows : N = `nodeCount` , E = 5*N.
+     * @param nodeCount number of nodes
+     * @return a Graph of Integers with N nodes and E edges.
+     */
+
     @Override
     public Graph<Integer> generate(int nodeCount) {
         Graph<Integer> graph = new Graph<>();

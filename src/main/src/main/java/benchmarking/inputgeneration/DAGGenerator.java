@@ -8,6 +8,13 @@ import java.util.Random;
 import java.util.Set;
 
 public class DAGGenerator implements GraphGenerator{
+
+    /**
+     * Generates a sparse connected DAG defined as follows : N = `nodeCount` , E = 5 * N,
+     * using natural ordering to ensure the graph remains Acyclic.
+     * @param nodeCount number of nodes
+     * @return a Graph of Integers with N nodes and E edges.
+     */
     @Override
     public Graph<Integer> generate(int nodeCount) {
         Graph<Integer> graph = new Graph<>();

@@ -8,6 +8,11 @@ import java.util.Random;
 import java.util.Set;
 
 public class DenseGenerator implements GraphGenerator{
+    /**
+     * Generates a connected dense graph defined as follows : N = `nodeCount` , E = N(N-1)/2 * 0.25 (quarter the number of edges of a complete graph).
+     * @param nodeCount number of nodes
+     * @return a Graph of Integers with N nodes and E edges
+     */
     @Override
     public Graph<Integer> generate(int nodeCount) {
         Graph<Integer> graph = new Graph<>();

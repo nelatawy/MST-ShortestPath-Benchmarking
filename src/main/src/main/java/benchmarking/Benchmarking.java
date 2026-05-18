@@ -15,11 +15,16 @@ public class Benchmarking {
 
     public static void MSTConstructionBenchmark(Graph<Integer> graph, GraphType type) throws IOException {
         int itrCnt = 5;
+        int warmupItrCnt = 10;
         List<Double> runningTimes = new ArrayList<>();
         Path file = Paths.get("mst-benchmarks.csv");
         if (!Files.exists(file)){
             Files.createFile(file);
             Files.writeString(file, "Algorithm, NodeCount, EdgeCount, Distribution, MeanTime, StdDev, MedianTime\n");
+        }
+
+        for(int i = 0; i < warmupItrCnt; i++){
+            graph.primMST();
         }
 
         for(int i = 0; i < itrCnt; i++){
@@ -44,6 +49,9 @@ public class Benchmarking {
 
 
         runningTimes.clear();
+        for(int i = 0; i < warmupItrCnt; i++){
+            graph.kruskalMST();
+        }
         for(int i = 0; i < itrCnt; i++){
             Long start = System.nanoTime();
             graph.kruskalMST();
@@ -200,7 +208,7 @@ public class Benchmarking {
     }
 
     public static void populateMSTResults() throws IOException {
-        List<Integer> sizes = new ArrayList<>(List.of(500,1000,2500,5000));
+        List<Integer> sizes = new ArrayList<>(List.of(500,1000,2500));
         for (Integer size : sizes){
             GraphGenerator generator = new DAGGenerator();
             Graph<Integer> graph = generator.generate(size);
@@ -261,6 +269,6 @@ public class Benchmarking {
     }
 
     public static void main() throws IOException {
-        populateDAGSSSPResults();
+        populateMSTResults();
     }
 }

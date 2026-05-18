@@ -5,6 +5,12 @@ import main.java.graph.Graph;
 import java.util.Random;
 
 public class CompleteGenerator implements GraphGenerator{
+
+    /**
+     * Generates a complete graph defined as follows : N = `nodeCount` , E = N(N-1)/2 .
+     * @param nodeCount number of nodes
+     * @return a Graph of Integers with N nodes and E edges.
+     */
     @Override
     public Graph<Integer> generate(int nodeCount) {
         Graph<Integer> graph = new Graph<>();
