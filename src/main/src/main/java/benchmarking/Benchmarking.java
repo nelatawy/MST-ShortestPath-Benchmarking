@@ -49,10 +49,15 @@ public class Benchmarking {
 
 
         runningTimes.clear();
+
         for(int i = 0; i < warmupItrCnt; i++){
             graph.kruskalMST();
         }
         for(int i = 0; i < itrCnt; i++){
+            // Shuffle edges to random order before Kruskal benchmark to ensure fair comparison
+            // (TimSort can exploit nearly-sorted data, making Kruskal artificially fast after Prim)
+            graph.shuffleEdges();
+
             Long start = System.nanoTime();
             graph.kruskalMST();
             Long end = System.nanoTime();
@@ -208,7 +213,7 @@ public class Benchmarking {
     }
 
     public static void populateMSTResults() throws IOException {
-        List<Integer> sizes = new ArrayList<>(List.of(500,1000,2500));
+        List<Integer> sizes = new ArrayList<>(List.of(500,1000,2500, 5000, 10000));
         for (Integer size : sizes){
             GraphGenerator generator = new DAGGenerator();
             Graph<Integer> graph = generator.generate(size);
@@ -234,33 +239,33 @@ public class Benchmarking {
     }
 
     public static void populateDijkstraSSSPResults() throws IOException{
-        List<Integer> sizes = new ArrayList<>(List.of(500,1000,2500,5000));
+        List<Integer> sizes = new ArrayList<>(List.of(10000));
         for (Integer size : sizes){
             GraphGenerator generator = new DAGGenerator();
             Graph<Integer> graph = generator.generate(size);
             generalShortestPathBenchmark(graph, GraphType.DAG);
         }
-        for (Integer size : sizes){
-            GraphGenerator generator = new SparseGenerator();
-            Graph<Integer> graph = generator.generate(size);
-            generalShortestPathBenchmark(graph, GraphType.SPARSE);
-        }
-
-        for (Integer size : sizes){
-            GraphGenerator generator = new DenseGenerator();
-            Graph<Integer> graph = generator.generate(size);
-            generalShortestPathBenchmark(graph, GraphType.DENSE);
-        }
-
-        for (Integer size : sizes){
-            GraphGenerator generator = new CompleteGenerator();
-            Graph<Integer> graph = generator.generate(size);
-            generalShortestPathBenchmark(graph, GraphType.COMPLETE);
-        }
+//        for (Integer size : sizes){
+//            GraphGenerator generator = new SparseGenerator();
+//            Graph<Integer> graph = generator.generate(size);
+//            generalShortestPathBenchmark(graph, GraphType.SPARSE);
+//        }
+//
+//        for (Integer size : sizes){
+//            GraphGenerator generator = new DenseGenerator();
+//            Graph<Integer> graph = generator.generate(size);
+//            generalShortestPathBenchmark(graph, GraphType.DENSE);
+//        }
+//
+//        for (Integer size : sizes){
+//            GraphGenerator generator = new CompleteGenerator();
+//            Graph<Integer> graph = generator.generate(size);
+//            generalShortestPathBenchmark(graph, GraphType.COMPLETE);
+//        }
     }
 
     public static void populateDAGSSSPResults() throws IOException {
-        List<Integer> sizes = new ArrayList<>(List.of(1000, 2500, 5000, 10000, 20000, 100000));
+        List<Integer> sizes = new ArrayList<>(List.of(1000, 2500, 5000, 7500, 10000));
         GraphGenerator generator = new DAGGenerator();
         for (Integer size : sizes) {
             Graph<Integer> graph = generator.generate(size);
@@ -269,6 +274,7 @@ public class Benchmarking {
     }
 
     public static void main() throws IOException {
-        populateMSTResults();
+        populateDijkstraSSSPResults();
+//        populateDAGSSSPResults();
     }
 }

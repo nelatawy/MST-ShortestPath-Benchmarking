@@ -27,10 +27,20 @@ public class TreeDS<E> implements DisjointSet<E>{
     public E getSet(E ele) {
         TreeNode itr = nodeMap.get(ele);
         if (itr == null) return null;
+        // path compression: make nodes point directly to root
+        if (itr.parent != null) {
+            itr.parent = (TreeNode) getSetNode(itr);
+        }
         while (itr.parent != null){
             itr = itr.parent;
         }
         return itr.data;
+    }
+    
+    private TreeNode getSetNode(TreeNode node) {
+        if (node.parent == null) return node;
+        node.parent = getSetNode(node.parent); // path compression
+        return node.parent;
     }
 
     @Override

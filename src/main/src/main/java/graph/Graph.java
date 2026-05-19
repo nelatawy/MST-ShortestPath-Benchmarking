@@ -123,31 +123,46 @@ public class Graph<E> {
      */
     public List<Edge<E>> primMST(){
         List<Edge<E>> minTree = new ArrayList<>();
-        PriorityQueue<EdgeRecord<E>> pq = new PriorityQueue<>();
-
         Set<E> visited = new HashSet<>();
-
+        
         if(edges.isEmpty())
             return null;
+        Map<E, Integer> minCost = new HashMap<>();
+        Map<E, Edge<E>> minEdge = new HashMap<>();
+        PriorityQueue<WeightRecord<E>> pq = new PriorityQueue<>();
 
         E start = edges.getFirst().from;
 
-        pq.add(new EdgeRecord<>(new Edge<>(null,null,0), start));
-        while(!pq.isEmpty()){
-            EdgeRecord<E> p = pq.poll();
-            E node = p.snd;
-            if (visited.contains(node)) continue; // ignore stale entries
+        for(E node : neighbors.keySet()) {
+            minCost.put(node, Integer.MAX_VALUE);
+        }
 
+        minCost.put(start, 0);
+        pq.add(new WeightRecord<>(0, start));
+
+        while(!pq.isEmpty()){
+            WeightRecord<E> record = pq.poll();
+            E node = record.node;
+            
+            if(visited.contains(node)) continue;
             visited.add(node);
-            if (p.fst.from != null){ // check to ignore initial mock edge
-                minTree.add(p.fst);
+
+            if(minEdge.containsKey(node)) { // safety check for initial mock edge
+                minTree.add(minEdge.get(node));
             }
+            
+            // Check all edges from this node
             for(Edge<E> edge : neighbors.get(node)){
                 E neighbor = (edge.from.equals(node))? edge.to : edge.from;
-                // if condition because in bidirectional edges there is no guarantee
-                pq.add(new EdgeRecord<>(edge, neighbor));
+                if(!visited.contains(neighbor) && edge.weight < minCost.get(neighbor)){
+                    //only add to the priority queue if the new edge is better
+                    minCost.put(neighbor, edge.weight);
+                    minEdge.put(neighbor, edge);
+                    pq.add(new WeightRecord<>(edge.weight, neighbor));
+                }
             }
         }
+        
         if (visited.size() != neighbors.size())
             return null; //not all visited ... disconnected graph
         return minTree;
@@ -160,11 +175,11 @@ public class Graph<E> {
      */
     public List<Edge<E>> kruskalMST(){
         List<Edge<E>> mstEdges = new ArrayList<>();
-        if (!edgesSorted){
+//        if (!edgesSorted){
             // to be faster on multiple queries
             Collections.sort(edges);
             edgesSorted = true;
-        }
+//        }
 
         // construct the Disjoint Set
         DisjointSet<E> set = new TreeDS<>();
@@ -204,6 +219,12 @@ public class Graph<E> {
 
         }
         PriorityQueue<WeightRecord<E>> pq = new PriorityQueue<>();
+        Map<E, Integer> minWeight = new HashMap<>();
+
+        for(E node : neighbors.keySet()) {
+            minWeight.put(node, Integer.MAX_VALUE);
+        }
+        minWeight.put(source, 0);
 
         Set<E> visited = new HashSet<>();
         pq.add(new WeightRecord<>(0, source));
@@ -215,8 +236,11 @@ public class Graph<E> {
             shortestPaths.put(record.node, record.cost);
             for(Edge<E> edge : neighbors.get(record.node)){
                 E neighbor = (edge.from.equals(record.node))? edge.to : edge.from;
-                if(visited.contains(neighbor)) continue; //extra optimization to ignore pre-visited nodes
-                pq.add(new WeightRecord<>(record.cost + edge.weight, neighbor));
+                if(!visited.contains(neighbor) && (edge.weight + record.cost < minWeight.get(neighbor))){
+                    minWeight.put(neighbor, edge.weight + record.cost);
+                    pq.add(new WeightRecord<>(edge.weight + record.cost, neighbor));
+                } //extra optimization to ignore pre-visited nodes
+                // only add to PQ if not already visited and better than already discovered
             }
 
         }
@@ -244,10 +268,6 @@ public class Graph<E> {
         // using c-style array to avoid unnecessary pointer hops or cache misses
         Queue<Integer> queue = new LinkedList<>();
 
-        for(Edge<E> edge : edges){
-            int nodeIdx = mapToIdx.get(edge.to);
-            inDegrees[nodeIdx]++;
-        }
         for(int i = 0; i < nodeCount; i++){
             if (inDegrees[i] == 0)
                 queue.add(i);
@@ -285,6 +305,15 @@ public class Graph<E> {
     public int getNodeCount(){return this.nodeCount;}
 
     public int getEdgeCount(){return this.edges.size();}
+
+    /**
+     * Shuffles the edge list to randomize order and resets the sorted flag.
+     * Use this before benchmarking Kruskal to ensure fair comparison with unsorted edges.
+     */
+    public void shuffleEdges(){
+        Collections.shuffle(edges);
+        edgesSorted = false;
+    }
 
     public List<E> BFS(E source){
         List<E> result = new ArrayList<>();
