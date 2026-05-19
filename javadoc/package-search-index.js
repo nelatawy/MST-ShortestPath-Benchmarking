@@ -1,1 +1,1 @@
-packageSearchIndex = [{"l":"$org"},{"l":"All Packages","u":"allpackages-index.html","k":"18"},{"l":"main.java.benchmarking"},{"l":"main.java.benchmarking.inputgeneration"},{"l":"main.java.DS"},{"l":"main.java.graph"},{"l":"test.java"}];updateSearchResults();
+packageSearchIndex = [{"l":"$org"},{"l":"All Packages","u":"allpackages-index.html"},{"l":"main.java.benchmarking"},{"l":"main.java.benchmarking.inputgeneration"},{"l":"main.java.DS"},{"l":"main.java.graph"},{"l":"test.java"}];updateSearchResults();

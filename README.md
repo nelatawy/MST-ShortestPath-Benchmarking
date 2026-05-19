@@ -189,11 +189,11 @@ Measured on DAG graphs with E ≈ 5 × N. Speedup = Dijkstra mean / DAG-Topo mea
 
 | Nodes | Edges | DAG-Topo mean (ms) | Dijkstra mean (ms) | Speedup |
 |---|---|---|---|---|
-| 1,000 | 5,000 | 2.07 | 2.10 | 1.02× |
-| 2,500 | 12,500 | 2.58 | 4.05 | 1.57× |
-| 5,000 | 25,000 | 4.18 | 6.84 | 1.64× |
-| 10,000 | 50,000 | 5.67 | 17.69 | 3.12× |
-| 20,000 | 100,000 | 27.77 | 16.88 | 0.61× |
+| 1,000 | 5,000 | 0.27 | 0.49 | 1.81× |
+| 2,500 | 12,500 | 0.64 | 0.91 | 1.43× |
+| 5,000 | 25,000 | 1.18 | 3.41 | 2.89× |
+| 7,500 | 37,500 | 1.67 | 11.49 | 6.87× |
+| 10,000 | 50,000 | 2.31 | 7.38 | 3.19× |
 
 The speedup advantage grows through 10,000 nodes as the O(V + E) vs O((V + E) log V) difference widens. The regression at 20,000 nodes reflects overhead in the topological sort phase (HashMap indirection and per-call `inDegrees` array allocation) becoming dominant at that scale — an active optimization target.
 
@@ -201,31 +201,39 @@ The speedup advantage grows through 10,000 nodes as the O(V + E) vs O((V + E) lo
 
 | Distribution | Nodes | Edges | Mean (ms) |
 |---|---|---|---|
-| DAG | 500 | 2,500 | 0.55 |
-| DAG | 5,000 | 25,000 | 3.43 |
-| Sparse | 500 | 2,500 | 1.74 |
-| Sparse | 5,000 | 25,000 | 12.76 |
-| Dense | 500 | 31,187 | 11.99 |
-| Dense | 1,000 | 124,875 | 112.95 |
-| Complete | 500 | 124,750 | 65.65 |
-| Complete | 1,000 | 499,500 | 381.30 |
-| Complete | 5,000 | 12,497,500 | 23,576.67 |
+| DAG | 1,000 | 5,000 | 0.49 |
+| DAG | 2,500 | 12,500 | 0.91 |
+| DAG | 5,000 | 25,000 | 3.41 |
+| DAG | 7,500 | 37,500 | 11.49 |
+| DAG | 10,000 | 50,000 | 7.38 |
+| Sparse | 1,000 | 5,000 | 0.87 |
+| Sparse | 2,500 | 12,500 | 1.68 |
+| Sparse | 5,000 | 25,000 | 3.87 |
+| Sparse | 7,500 | 37,500 | 8.51 |
+| Sparse | 10,000 | 50,000 | 15.80 |
+| Dense | 1,000 | 124,875 | 15.10 |
+| Dense | 2,500 | 780,937 | 120.99 |
+| Dense | 5,000 | 3,124,375 | 361.99 |
+| Dense | 7,500 | 7,030,312 | 722.70 |
+| Complete | 1,000 | 499,500 | 60.23 |
+| Complete | 2,500 | 3,123,750 | 201.82 |
+| Complete | 5,000 | 12,497,500 | 857.08 |
+| Complete | 7,500 | 28,121,250 | 2,081.72 |
+| Complete | 10,000 | 49,995,000 | 3,878.03 |
 
 Dijkstra scales cleanly on sparse graphs but degrades sharply on complete graphs due to priority queue pressure — O(E log V) with E = O(V²) gives O(V² log V) in the complete case.
 
-### MST: Prim vs Kruskal (Sort-once optimization enabled)
+
+### MST: Prim vs Kruskal (Native)
 
 | Distribution | Nodes | Edges | Prim mean (ms) | Kruskal mean (ms) | Winner |
 |---|---|---|---|---|---|
-| Sparse | 500 | 2,500 | 2.36 | 1.55 | Kruskal |
-| Sparse | 5,000 | 25,000 | 40.88 | 128.35 | Prim |
-| Dense | 500 | 31,187 | 30.78 | 18.86 | Kruskal |
-| Dense | 1,000 | 124,875 | 230.62 | 122.64 | Kruskal |
-| Dense | 5,000 | 3,124,375 | 17,085.59 | 21,763.50 | Prim |
-| Complete | 500 | 124,750 | 382.39 | 53.71 | Kruskal |
-| Complete | 1,000 | 499,500 | 1,305.00 | 381.57 | Kruskal |
-| Complete | 5,000 | 12,497,500 | 76,214.88 | 45,766.82 | Kruskal |
-
+| Sparse | 500| 2500| 1.9156| 0.01939| Kruskal |
+| Sparse | 1000| 5000| 4.141| 2.79| Kruskal |
+| Dense | 500 | 31187 | 3.636 | 11.82 | Prim |
+| Dense | 1000 | 124875 | 20.97537 | 49.664 | Prim |
+| Complete | 500 | 124750 | 6.2404 | 39.0760632 | Prim |
+| Complete | 1000 | 499500 | 35.750 | 221.9487 | Prim |
 
 > **Note That** : The more dense the graph becomes the more Prim's should outperform Kruskal O((V+E)LgV) vs O(ELgE),
-> but since the benchmarks ran on the same edge list that was previously sorted so results were cached and therefore, the overhead of sorted was eliminated.
+> However : if the benchmarks would run on the same edge list that was previously sorted so results were cached and therefore, the overhead of sorting was eliminated, kruskal might even be faster than prim.
