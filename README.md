@@ -76,7 +76,7 @@ Both methods auto-register new nodes and increment `nodeCount`. An `edgesSorted`
 
 **`primMST()`** — Prim's Algorithm, O((V + E) log V)
 
-Grows the MST greedily from an arbitrary start node using a `PriorityQueue<EdgeRecord>`. Ignores stale PQ entries via a visited set. Returns `null` for disconnected graphs.
+Grows the MST greedily from an arbitrary start node using a `PriorityQueue<EdgeRecord>`. Ignores stale PQ entries via a visited set, only pushes better candidates via a `minCost` map, Returns `null` for disconnected graphs.
 
 **`kruskalMST()`** — Kruskal's Algorithm, O(E log E)
 
@@ -84,7 +84,7 @@ Sorts the edge list once (cached via `edgesSorted`) then uses `TreeDS` to greedi
 
 **`dijkstra(E source)`** — Dijkstra's SSSP, O((V + E) log V)
 
-Standard lazy-deletion priority queue approach. Returns `null` immediately if any negative weight is detected. Unreachable nodes are absent from the returned map rather than set to infinity. Works on both directed and undirected graphs.
+Eager Dijkstra priority queue approach that only pushes entries if they provide an improved cost, Returns `null` immediately if any negative weight is detected. Unreachable nodes are absent from the returned map rather than set to infinity. Works on both directed and undirected graphs.
 
 **`dagShortestPath(E source)`** — DAG Topological SSSP, O(V + E)
 

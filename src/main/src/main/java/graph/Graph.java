@@ -175,11 +175,11 @@ public class Graph<E> {
      */
     public List<Edge<E>> kruskalMST(){
         List<Edge<E>> mstEdges = new ArrayList<>();
-//        if (!edgesSorted){
+        if (!edgesSorted){
             // to be faster on multiple queries
             Collections.sort(edges);
             edgesSorted = true;
-//        }
+        }
 
         // construct the Disjoint Set
         DisjointSet<E> set = new TreeDS<>();
